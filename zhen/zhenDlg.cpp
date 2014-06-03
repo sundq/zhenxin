@@ -7,15 +7,12 @@
 #include "zhenDlg.h"
 #include "afxdialogex.h"
 #include "math.h" 
+#include "locale.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
-MY_ITEMDATA* price_pData[1000];
-MY_ITEMDATA* points_pData[1000];
-int price_pDataNumber = 0;
-int points_pDataNumber = 0;
 static int isSort = TRUE;
 // CAboutDlg dialog used for App About
 
@@ -24,13 +21,13 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// Dialog Data
+	// Dialog Data
 	enum { IDD = IDD_ABOUTBOX };
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
-// Implementation
+	// Implementation
 protected:
 	DECLARE_MESSAGE_MAP()
 };
@@ -98,6 +95,8 @@ BEGIN_MESSAGE_MAP(CzhenDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_CHECK2, &CzhenDlg::OnBnClickedCheck2)
 	ON_COMMAND(ID_32771, &CzhenDlg::On32771)
 	ON_BN_CLICKED(IDC_BUTTON3, &CzhenDlg::OnBnClickedButton3)
+	ON_COMMAND(ID_32772, &CzhenDlg::On32772)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -126,7 +125,7 @@ BOOL CzhenDlg::OnInitDialog()
 			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
 		}
 	}
-	
+
 	_radio_unit.SetCheck(1);
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
@@ -150,6 +149,8 @@ BOOL CzhenDlg::OnInitDialog()
 	result_list.InsertColumn(2, _T("报价得分"), LVCFMT_CENTER, rect.Width()/2, 1);
 	result_list.DeleteColumn(0);
 
+	price_pDataNumber = 0;
+	points_pDataNumber = 0;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -217,7 +218,6 @@ void CzhenDlg::OnNMDblclkList1(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	// TODO: Add your control notification handler code here
-	MessageBoxW(_T("ddd"));
 	*pResult = 0;
 }
 
@@ -235,10 +235,10 @@ void CzhenDlg::OnSize(UINT nType, int cx, int cy)
 
 void CzhenDlg::OnBnClickedButton2()
 {
-    CString name;
+	CString name;
 	CString price;
-    customerName.GetWindowText(name);
-    customerPrice.GetWindowText(price);
+	customerName.GetWindowText(name);
+	customerPrice.GetWindowText(price);
 	char buf[128] = {0};
 	m_list.GetItemCount();
 
@@ -289,7 +289,7 @@ void CzhenDlg::OnBnClickedButton4()
 	CString basePrice;
 
 	int customer_num = m_list.GetItemCount();
-	double max_price = 0;
+	double max_price = 0.0;
 	double min_price = 10000000000000.0;
 	double sum = 0;
 	double base_double = 0;
@@ -310,7 +310,7 @@ void CzhenDlg::OnBnClickedButton4()
 		sum += cur_price;
 	}
 
-	if(customer_num > 5 && _check_box_del_max_min.GetCheck())
+	if(customer_num >= 5 && _check_box_del_max_min.GetCheck())
 	{
 		sum -= max_price;
 		sum -= min_price;
@@ -328,9 +328,11 @@ void CzhenDlg::OnBnClickedButton4()
 		base_double = base_double * (100.0 - _wtof(percent_str))/100;
 	}
 
-	basePrice.Format(_T("%f(%s)"),base_double,_radio_unit.GetCheck()?_T("元"):_T("万元"));
+	basePrice.Format(_T("%0.2f(%s)"),base_double,_radio_unit.GetCheck()?_T("元"):_T("万元"));
+	base_price.SetReadOnly(0);
 	base_price.SetWindowTextW(basePrice);
-	
+	base_price.SetReadOnly(1);
+
 	if(base_double > -0.0000001 && base_double < 0.0000001)
 	{
 		MessageBoxW(_T("基准价太小了"));
@@ -338,7 +340,7 @@ void CzhenDlg::OnBnClickedButton4()
 	}
 
 	result_list.DeleteAllItems();
-    for(int i = 0; i < customer_num;i++)
+	for(int i = 0; i < customer_num;i++)
 	{
 		CString name = m_list.GetItemText(i,0); 
 		double P1 = _wtof(m_list.GetItemText(i,1));
@@ -350,9 +352,9 @@ void CzhenDlg::OnBnClickedButton4()
 		points_pData[points_pDataNumber] = new MY_ITEMDATA;
 		points_pData[points_pDataNumber]->isRet = TRUE;
 		points_pData[points_pDataNumber]->name = name;
-		points_pData[points_pDataNumber]->points = points;
+		points_pData[points_pDataNumber]->points = points > 0.00 ? points: 0.00;
 		CString P;
-		P.Format(_T("%f"),points);
+		P.Format(_T("%0.2f"),points > 0.00 ? points: 0.00);
 		result_list.InsertItem(num, name);
 		result_list.SetItemText(num,1,P);
 		result_list.SetItemData(num, (LPARAM)points_pData[points_pDataNumber]);
@@ -407,7 +409,7 @@ int CALLBACK SortFuncPoints(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 	{
 		nRetVal = (pData1->points <= pData2->points);
 	}
-	
+
 	return nRetVal;
 }
 
@@ -425,7 +427,7 @@ int CALLBACK SortFuncPrice(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 	PMYITEMDATA pData2 = (PMYITEMDATA)lParam2;
 	if(isSort%2)
 	{
-    	nRetVal = (pData1->price > pData2->price);
+		nRetVal = (pData1->price > pData2->price);
 	}
 	else
 	{
@@ -515,11 +517,81 @@ void CzhenDlg::On32771()
 	}
 }
 
+CString GetFileFilename()
+{
+	CString str;
+	CTime t(CTime::GetCurrentTime().GetTime());
+	str=t.Format(L"%Y_%m_%d");
+	return str+_T(".csv");
+}
 
 void CzhenDlg::OnBnClickedButton3()
 {
-	FILE *fp = fopen("data.csv","a+");
-	
-	fclose(fp);
-	// TODO: Add your control notification handler code here
+	CString weight_str("报价分权重,");
+	CString k1_str("K1(高于),");
+	CString k2_str("K2(低于),");
+	CString base_str("评标基准价,");
+	CString header("投标人,投标得分\n");
+
+	char* old_locale = _strdup( setlocale(LC_CTYPE,NULL) );
+	CStdioFile _File;
+	_File.Open(GetFileFilename(),CFile::modeCreate|CFile::modeReadWrite);
+	CString tmp;
+	weight.GetWindowTextW(tmp);
+	_File.WriteString(weight_str+tmp+"\n");
+
+	k1_value.GetWindowTextW(tmp);
+	_File.WriteString(k1_str +tmp+"\n");
+
+	k2_value.GetWindowTextW(tmp);
+	_File.WriteString(k2_str +tmp+"\n");
+
+	base_price.GetWindowTextW(tmp);
+	_File.WriteString(base_str);
+	setlocale( LC_CTYPE, "chs" );
+	_File.WriteString(tmp);
+	setlocale( LC_CTYPE, old_locale );
+	_File.WriteString(_T("\n"));
+
+	_File.WriteString(header);
+
+	int num = result_list.GetItemCount();
+	CString name;
+	CString points;
+	for(int i = 0;i < num;i++)
+	{
+		name = result_list.GetItemText(i,0);
+		points = result_list.GetItemText(i,1);
+		CString ret = name+","+points+"\n";
+		setlocale( LC_CTYPE, "chs" );
+		_File.WriteString(ret);
+		setlocale( LC_CTYPE, old_locale );
+	}
+	_File.Flush();
+	_File.Close();
+	MessageBoxW(_T("导出成功：")+GetFileFilename());
+	free( old_locale );//还原区域设定
+}
+
+
+void CzhenDlg::On32772()
+{
+	m_list.DeleteAllItems();
+	// TODO: Add your command handler code here
+}
+
+
+void CzhenDlg::OnClose()
+{
+	// TODO: Add your message handler code here and/or call default
+	for(int i = 0;i<price_pDataNumber;i++)
+	{
+		delete price_pData[i];
+	}
+
+	for(int i = 0;i<points_pDataNumber;i++)
+	{
+		delete points_pData[i];
+	}
+	CDialogEx::OnClose();
 }

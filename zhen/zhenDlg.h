@@ -32,6 +32,11 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	MY_ITEMDATA* price_pData[1000];
+	MY_ITEMDATA* points_pData[1000];
+	int price_pDataNumber;
+	int points_pDataNumber;
+
 	afx_msg void OnLvnItemchangedList1(NMHDR *pNMHDR, LRESULT *pResult);
 	CListCtrl m_list;
 	afx_msg void OnNMDblclkList1(NMHDR *pNMHDR, LRESULT *pResult);
@@ -61,4 +66,8 @@ public:
 	CButton _check_box_floating_percents;
 	afx_msg void On32771();
 	CButton _check_box_del_max_min;
+	CButton _button_export_data;
+	afx_msg void OnBnClickedButton3();
+	afx_msg void On32772();
+	afx_msg void OnClose();
 };
