@@ -327,7 +327,7 @@ void CzhenDlg::OnBnClickedButton4()
 		_edit_floating_percents.GetWindowTextW(percent_str);
 		base_double = base_double * (100.0 - _wtof(percent_str))/100;
 	}
-
+	base_double = (int)(base_double * 100 + 0.5)/100.0;
 	basePrice.Format(_T("%0.2f(%s)"),base_double,_radio_unit.GetCheck()?_T("Ôª"):_T("ÍòÔª"));
 	base_price.SetReadOnly(0);
 	base_price.SetWindowTextW(basePrice);
